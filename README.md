@@ -1,1 +1,0 @@
-# AI-Hospital-Management-sytem
