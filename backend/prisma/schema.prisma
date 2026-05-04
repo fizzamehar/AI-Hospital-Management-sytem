@@ -1,0 +1,121 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  DOCTOR
+  PATIENT
+}
+
+model User {
+  id        String   @id @default(uuid())
+  name      String?
+  email          String   @unique
+  password       String
+  role           Role
+  contact        String?
+  profilePicture String?
+
+  patient   Patient?
+  doctor    Doctor?
+  chats     ChatMessage[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Patient {
+  id        String  @id @default(uuid())
+  userId    String? @unique
+  user      User?   @relation(fields: [userId], references: [id])
+
+  address   String?
+  age       Int?
+
+  appointments  Appointment[]
+  prescriptions Prescription[]
+  billings      Billing[]
+  medicalRecords MedicalRecord[]
+}
+
+model Doctor {
+  id             String  @id @default(uuid())
+  userId         String? @unique
+  specialization String
+  experience     Int?
+  available      Boolean @default(true)
+
+  user           User?   @relation(fields: [userId], references: [id])
+
+  appointments   Appointment[]
+  prescriptions  Prescription[]
+  medicalRecords MedicalRecord[]
+}
+
+model Appointment {
+  id        String   @id @default(uuid())
+  patientId String
+  doctorId  String
+  symptoms  String
+  date      DateTime @default(now())
+  status    String   @default("PENDING")
+
+  createdAt DateTime @default(now())
+
+  patient      Patient       @relation(fields: [patientId], references: [id])
+  doctor       Doctor        @relation(fields: [doctorId], references: [id])
+  prescription Prescription?
+}
+
+model Prescription {
+  id            String   @id @default(uuid())
+  doctorId      String
+  patientId     String
+  appointmentId String?  @unique
+  notes         String
+  medicines     String
+  createdAt     DateTime @default(now())
+
+  doctor      Doctor       @relation(fields: [doctorId], references: [id])
+  patient     Patient      @relation(fields: [patientId], references: [id])
+  appointment Appointment? @relation(fields: [appointmentId], references: [id])
+}
+
+model ChatMessage {
+  id        String   @id @default(uuid())
+  userId    String
+  role      String   // 'user' or 'assistant'
+  content   String
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+}
+
+model Billing {
+  id        String   @id @default(uuid())
+  patientId String
+  amount    Float
+  status    String   @default("UNPAID") // PAID, UNPAID, PENDING
+  date      DateTime @default(now())
+
+  patient   Patient  @relation(fields: [patientId], references: [id])
+}
+
+model MedicalRecord {
+  id        String   @id @default(uuid())
+  patientId String
+  doctorId  String
+  diagnosis String
+  treatment String
+  documentUrl String?
+  date      DateTime @default(now())
+
+  patient   Patient  @relation(fields: [patientId], references: [id])
+  doctor    Doctor   @relation(fields: [doctorId], references: [id])
+}
